@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Customers Directory - WorkshopOS{% endblock %}
+
+{% block nav_customers %}active{% endblock %}
+
+{% block content %}
+<div class="page-title-section" style="display: flex; justify-content: space-between; align-items: flex-end;">
+  <div>
+    <h1 class="page-title">Customers</h1>
+    <p class="page-subtitle">Search, view and manage all registered workshop customers.</p>
+  </div>
+  <div>
+    <a href="{% url 'customers:profile_default' %}" class="btn btn-primary">+ New Customer</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Contact</th>
+          <th>Location</th>
+          <th>Type</th>
+          <th>Vehicles</th>
+          <th>Member Since</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in customers %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #EEF2FF; color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px;">
+                {{ c.initials }}
+              </div>
+              <div>
+                <a href="{% url 'customers:profile' c.id %}" style="font-weight: 600; color: var(--text-main); text-decoration: none;">{{ c.name }}</a>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 13px;">{{ c.phone }}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">{{ c.email }}</div>
+          </td>
+          <td style="color: var(--text-muted);">{{ c.address }}</td>
+          <td>
+            <span class="badge badge-regular">{{ c.get_customer_type_display }}</span>
+          </td>
+          <td>
+            <span class="badge-pill-tag">{{ c.vehicles.count }} Vehicles</span>
+          </td>
+          <td style="color: var(--text-muted);">{{ c.customer_since|date:"M Y" }}</td>
+          <td>
+            <a href="{% url 'customers:profile' c.id %}" class="btn btn-outline btn-sm">View Profile</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+            No customers found matching "{{ query }}".
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

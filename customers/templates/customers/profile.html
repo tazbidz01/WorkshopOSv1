@@ -1,0 +1,535 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.name }} - Customer Profile | WorkshopOS{% endblock %}
+
+{% block nav_customers %}active{% endblock %}
+
+{% block content %}
+<div class="page-title-section">
+  <h1 class="page-title">Customer Profile</h1>
+  <p class="page-subtitle">View and manage customer details, vehicles, service history and more.</p>
+</div>
+
+<!-- ================= 1. Customer Hero Banner ================= -->
+<div class="customer-hero">
+  <div class="hero-top-row">
+    <div class="hero-customer-info">
+      <div class="customer-avatar-large">
+        {{ customer.initials }}
+      </div>
+      <div>
+        <div class="hero-name-row">
+          <span class="hero-name">{{ customer.name }}</span>
+          <span class="badge badge-regular">{{ customer.get_customer_type_display }}</span>
+        </div>
+        <div class="hero-meta-row">
+          <div class="meta-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            {{ customer.phone }}
+          </div>
+          <div class="meta-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            {{ customer.email }}
+          </div>
+          <div class="meta-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            {{ customer.address }}, {{ customer.country }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-actions">
+      <button type="button" class="btn btn-outline" onclick="openModal('editProfileModal')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Edit Profile
+      </button>
+      <button type="button" class="btn btn-outline" onclick="openModal('addVehicleModal')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        Add Vehicle
+      </button>
+      <a href="#" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Create Job Card
+      </a>
+    </div>
+  </div>
+
+  <!-- Hero Nav Tabs -->
+  <div class="hero-tabs">
+    <a href="?tab=overview" class="tab-link {% if active_tab == 'overview' %}active{% endif %}">Overview</a>
+    <a href="?tab=vehicles" class="tab-link {% if active_tab == 'vehicles' %}active{% endif %}">Vehicles ({{ vehicles.count }})</a>
+    <a href="?tab=history" class="tab-link {% if active_tab == 'history' %}active{% endif %}">Service History</a>
+    <a href="?tab=invoices" class="tab-link {% if active_tab == 'invoices' %}active{% endif %}">Invoices</a>
+    <a href="?tab=notes" class="tab-link {% if active_tab == 'notes' %}active{% endif %}">Notes ({{ notes.count }})</a>
+  </div>
+</div>
+
+<!-- ================= 2. Top Metric KPI Cards ================= -->
+<div class="stats-grid">
+  <!-- Card 1: Total Visits -->
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"></path><rect x="3" y="11" width="18" height="7" rx="2"></rect><circle cx="7" cy="15" r="1.5"></circle><circle cx="17" cy="15" r="1.5"></circle><path d="M5 18v2"></path><path d="M19 18v2"></path></svg>
+    </div>
+    <div class="stat-label">Total Visits</div>
+    <div class="stat-value-row">
+      <span class="stat-value">{{ total_visits }}</span>
+      <span class="stat-trend">&#8599; {{ total_visits_diff }}</span>
+    </div>
+    <div class="stat-subtext">vs. last year</div>
+  </div>
+
+  <!-- Card 2: Total Spent -->
+  <div class="stat-card">
+    <div class="stat-icon purple">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+    </div>
+    <div class="stat-label">Total Spent</div>
+    <div class="stat-value-row">
+      <span class="stat-value">${{ total_spent }}</span>
+      <span class="stat-trend">&#8599; {{ total_spent_diff }}</span>
+    </div>
+    <div class="stat-subtext">vs. last year</div>
+  </div>
+
+  <!-- Card 3: Last Visit -->
+  <div class="stat-card">
+    <div class="stat-icon indigo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </div>
+    <div class="stat-label">Last Visit</div>
+    <div class="stat-value-row">
+      <span class="stat-value" style="font-size: 20px;">{{ last_visit }}</span>
+    </div>
+    <div class="stat-subtext">{{ last_visit_relative }}</div>
+  </div>
+
+  <!-- Card 4: Customer Since -->
+  <div class="stat-card">
+    <div class="stat-icon green">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </div>
+    <div class="stat-label">Customer Since</div>
+    <div class="stat-value-row">
+      <span class="stat-value" style="font-size: 20px;">{{ customer_since_formatted }}</span>
+    </div>
+    <div class="stat-subtext">{{ customer_duration }}</div>
+  </div>
+</div>
+
+<!-- ================= 3. Two-Column Dashboard Content ================= -->
+<div class="profile-grid">
+
+  <!-- LEFT COLUMN: Vehicles & Service Activities -->
+  <div class="profile-main-col">
+
+    <!-- A. Vehicles Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"></path><rect x="3" y="11" width="18" height="7" rx="2"></rect><circle cx="7" cy="15" r="1.5"></circle><circle cx="17" cy="15" r="1.5"></circle><path d="M5 18v2"></path><path d="M19 18v2"></path></svg>
+          Vehicles ({{ vehicles.count }})
+        </h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openModal('addVehicleModal')">Add Vehicle</button>
+      </div>
+
+      <div class="vehicle-list">
+        {% for v in vehicles %}
+        <div class="vehicle-item">
+          <div class="vehicle-left">
+            <div class="vehicle-thumb">
+              <!-- Clean Vehicle Vector Graphic -->
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.6"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
+            </div>
+            <div>
+              <div class="vehicle-title">{{ v.make }} {{ v.model }}</div>
+              <div class="vehicle-specs">{{ v.year }} &bull; {{ v.engine_spec }}</div>
+              <span class="vehicle-plate">{{ v.license_plate }}</span>
+            </div>
+          </div>
+          <div>
+            <a href="#" class="btn btn-outline btn-sm">View Details</a>
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+          No vehicles registered for this customer.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- B. Recent Service Activity Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Recent Service Activity
+        </h3>
+        <a href="?tab=history" class="btn-link">View All &rarr;</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Vehicle</th>
+              <th>Service</th>
+              <th>Technician</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in service_history %}
+            <tr>
+              <td style="color: var(--text-muted); font-size: 12px;">{{ item.date }}</td>
+              <td>
+                <div style="font-weight: 500;">{{ item.vehicle_name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ item.license_plate }}</div>
+              </td>
+              <td>{{ item.service }}</td>
+              <td style="color: var(--text-muted);">{{ item.technician }}</td>
+              <td>
+                <span class="badge badge-completed">{{ item.status }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- C. Open Jobs / Active Services Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          Open Jobs / Active Services
+        </h3>
+        <a href="#" class="btn-link">View All &rarr;</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Vehicle</th>
+              <th>Service</th>
+              <th>Date In</th>
+              <th>Expected</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in active_jobs %}
+            <tr>
+              <td style="font-weight: 600; color: var(--primary);">{{ job.job_id }}</td>
+              <td>
+                <div style="font-weight: 500;">{{ job.vehicle_name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ job.license_plate }}</div>
+              </td>
+              <td>{{ job.service }}</td>
+              <td style="color: var(--text-muted); font-size: 12px;">{{ job.date_in }}</td>
+              <td style="color: var(--text-muted); font-size: 12px;">{{ job.expected }}</td>
+              <td>
+                {% if job.status == 'In Progress' %}
+                <span class="badge badge-progress">In Progress</span>
+              {% elif job.status == 'Pending' %}
+                <span class="badge badge-pending">Pending</span>
+              {% else %}
+                <span class="badge {{ job.status_class }}">{{ job.status }}</span>
+              {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN: Contact Info, Notes, Billing, Quick Actions -->
+  <div class="profile-side-col">
+
+    <!-- Contact Information Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Contact Information
+        </h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openModal('editProfileModal')">Edit</button>
+      </div>
+
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        <span>{{ customer.phone }}</span>
+      </div>
+
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        <span>{{ customer.email }}</span>
+      </div>
+
+      <div class="info-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <div>
+          <div>{{ customer.address }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">{{ customer.country }}</div>
+        </div>
+      </div>
+
+      <div class="info-row" style="align-items: center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>
+        <span style="font-size: 12px; color: var(--text-muted); margin-right: 8px;">Preferred Contact Method</span>
+        <span class="badge-pill-tag">{{ customer.preferred_contact }}</span>
+      </div>
+    </div>
+
+    <!-- Customer Notes Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Customer Notes
+        </h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openModal('addNoteModal')">Edit</button>
+      </div>
+
+      {% for n in notes %}
+      <div class="note-box" style="margin-bottom: 10px;">
+        {{ n.content }}
+        <div class="note-author">Added on {{ n.created_at|date:"d M Y" }} by {{ n.author_name }}</div>
+      </div>
+      {% empty %}
+      <div class="note-box">
+        Prefers genuine OEM parts. Usually books service in advance. Keep the customer updated during service. Very particular about clean work and timely delivery.
+        <div class="note-author">Added on 12 Mar 2024 by Ibrahim Khan</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Billing Snapshot Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          Billing Snapshot
+        </h3>
+      </div>
+
+      <div class="billing-grid">
+        <div class="billing-col">
+          <div class="billing-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Total Invoices</span>
+          </div>
+          <div class="billing-val">{{ billing.total_invoices }} <span style="font-size: 11px; color: #10B981;">&#8599; {{ billing.total_diff }}</span></div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">vs. last year</div>
+        </div>
+        <div class="billing-col">
+          <div class="billing-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Pending Payment</span>
+          </div>
+          <div class="billing-val" style="color: #D97706;">${{ billing.pending_payment }}</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">{{ billing.pending_count }} invoices</div>
+        </div>
+        <div class="billing-col">
+          <div class="billing-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span>Avg. Invoice Value</span>
+          </div>
+          <div class="billing-val">${{ billing.avg_value }} <span style="font-size: 11px; color: #10B981;">&#8599; {{ billing.avg_diff }}</span></div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">vs. last year</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Quick Actions
+        </h3>
+      </div>
+
+      <div class="quick-action-list">
+        <a href="#" class="btn-quick">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Create Job Card
+        </a>
+        <a href="#" class="btn-quick">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Create Invoice
+        </a>
+        <button type="button" class="btn-quick" onclick="openModal('addNoteModal')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          Add Note
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. Edit Profile Modal -->
+<div id="editProfileModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Customer Profile</h3>
+      <button type="button" class="btn-link" onclick="closeModal('editProfileModal')">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'customers:edit' customer.id %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          {{ edit_form.name }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Customer Tier / Status</label>
+          {{ edit_form.customer_type }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          {{ edit_form.phone }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          {{ edit_form.email }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Street Address</label>
+          {{ edit_form.address }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          {{ edit_form.country }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preferred Contact Method</label>
+          {{ edit_form.preferred_contact }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editProfileModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Add Vehicle Modal -->
+<div id="addVehicleModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Vehicle to Customer</h3>
+      <button type="button" class="btn-link" onclick="closeModal('addVehicleModal')">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'customers:add_vehicle' customer.id %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Make (Brand)</label>
+          {{ vehicle_form.make }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model</label>
+          {{ vehicle_form.model }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year</label>
+          {{ vehicle_form.year }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Engine Specification</label>
+          {{ vehicle_form.engine_spec }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">License Plate</label>
+          {{ vehicle_form.license_plate }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">VIN (Chassis Number)</label>
+          {{ vehicle_form.vin }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mileage (km)</label>
+          {{ vehicle_form.mileage }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('addVehicleModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Vehicle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Add Note Modal -->
+<div id="addNoteModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Customer Note</h3>
+      <button type="button" class="btn-link" onclick="closeModal('addNoteModal')">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'customers:add_note' customer.id %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Staff Name</label>
+          {{ note_form.author_name }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note Details</label>
+          {{ note_form.content }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('addNoteModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Note</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  // Close modal when clicking on dark backdrop
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('open');
+      }
+    });
+  });
+</script>
+
+{% endblock %}
