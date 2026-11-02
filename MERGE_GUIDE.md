@@ -148,3 +148,22 @@ To avoid migration conflicts:
    ```bash
    python manage.py seed_customer
    ```
+
+---
+
+## 🛠️ How to Disable / Replace Tentative Features
+
+To allow realistic demos and testing before other team members finish their apps, tentative flows have been provided for **Create Job Card** and **Add Vehicle**. Every tentative block is marked with explicit comment banners:
+
+### To switch "Create Job Card" to Member 2's official `jobs` app:
+1. **In `customers/views.py`**:
+   Comment out the `create_job_card(request, customer_id)` function at the bottom.
+2. **In `customers/urls.py`**:
+   Comment out the line:
+   ```python
+   # path('<int:customer_id>/create-job-card/', views.create_job_card, name='create_job_card'),
+   ```
+3. **In `customers/templates/customers/profile.html`**:
+   - Change the button `onclick="openModal('createJobCardModal')"` to link to Member 2's route: `href="{% url 'jobs:create' customer.id %}"`
+   - Comment out or delete the `<!-- TENTATIVE: Create Job Card Modal -->` section at the bottom.
+

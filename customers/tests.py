@@ -143,3 +143,21 @@ class CustomerViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.customer.notes.count(), 1)
         self.assertEqual(self.customer.notes.first().content, 'Test preference note for workshop.')
+
+    def test_tentative_create_job_card(self):
+        response = self.client.post(
+            reverse('customers:create_job_card', args=[self.customer.id]),
+            {
+                'vehicle_id': self.vehicle.id,
+                'service': 'Brake Pad Replacement',
+                'complaint': 'Spongy brake feel',
+                'priority': 'High',
+                'expected': '05 Nov 2026, 3:00 PM',
+            }
+        )
+        self.assertEqual(response.status_code, 302)
+        # Verify job card appears in active jobs on profile reload
+        profile_response = self.client.get(reverse('customers:profile', args=[self.customer.id]))
+        self.assertEqual(profile_response.status_code, 200)
+        self.assertContains(profile_response, 'Brake Pad Replacement')
+        self.assertContains(profile_response, self.vehicle.license_plate)

@@ -75,17 +75,23 @@ def _get_service_activity(customer):
     ]
 
 
-def _get_active_jobs(customer):
+def _get_active_jobs(customer, request=None):
     """
     Seamless integration hook:
     If teammate 2's 'jobs' app is installed, queries open JobCards.
     Otherwise, gracefully provides the UI mockup active jobs.
+    Also merges any tentative session-created job cards.
     """
+    # Retrieve tentative job cards stored in session for this customer
+    tentative_jobs = []
+    if request:
+        tentative_jobs = request.session.get(f'tentative_jobs_{customer.id}', [])
+
     try:
         JobCard = apps.get_model('jobs', 'JobCard')
         jobs = JobCard.objects.filter(customer=customer).exclude(status='Completed').order_by('-created_at')
         if jobs.exists():
-            return [
+            real_jobs = [
                 {
                     'job_id': getattr(j, 'job_number', f"#J{j.id:04d}"),
                     'vehicle_name': str(j.vehicle),
@@ -94,14 +100,15 @@ def _get_active_jobs(customer):
                     'date_in': j.created_at.strftime('%d %b %Y'),
                     'expected': getattr(j, 'expected_date', 'Pending'),
                     'status': j.status,
-                    'status_class': 'badge-progress' if j.status == 'In Progress' else 'status-pending',
+                    'status_class': 'badge-progress' if j.status == 'In Progress' else 'badge-pending',
                 } for j in jobs
             ]
+            return tentative_jobs + real_jobs
     except (LookupError, AttributeError, Exception):
         pass
 
     # Seamless fallback matching UI mockup (UI 03)
-    return [
+    mock_jobs = [
         {
             'job_id': '#J0421',
             'vehicle_name': 'Toyota Land Cruiser',
@@ -123,6 +130,7 @@ def _get_active_jobs(customer):
             'status_class': 'badge-pending',
         },
     ]
+    return tentative_jobs + mock_jobs
 
 
 def _get_billing_snapshot(customer):
@@ -207,7 +215,7 @@ def customer_profile(request, customer_id=None):
     vehicles = customer.vehicles.all()
     notes = customer.notes.all()
     service_history = _get_service_activity(customer)
-    active_jobs = _get_active_jobs(customer)
+    active_jobs = _get_active_jobs(customer, request=request)
     billing = _get_billing_snapshot(customer)
 
     # Active tab from query param
@@ -282,9 +290,14 @@ def customer_edit(request, customer_id):
     return render(request, 'customers/edit.html', {'form': form, 'customer': customer})
 
 
+# ==============================================================================
+# TENTATIVE / MODULAR: Add Vehicle Action
+# (Easy to disable: comment out this function when replacing with a dedicated vehicles module)
+# ==============================================================================
 def add_vehicle(request, customer_id):
     """
     Registers a new vehicle for a customer.
+    To replace with a dedicated vehicles app: simply comment out this function.
     """
     customer = get_object_or_404(Customer, pk=customer_id)
     if request.method == 'POST':
@@ -298,6 +311,9 @@ def add_vehicle(request, customer_id):
         else:
             messages.error(request, "Failed to add vehicle. Please check the inputs.")
     return redirect('customers:profile', customer_id=customer.id)
+# ==============================================================================
+# END TENTATIVE / MODULAR: Add Vehicle Action
+# ==============================================================================
 
 
 def add_note(request, customer_id):
@@ -315,3 +331,60 @@ def add_note(request, customer_id):
         else:
             messages.error(request, "Could not save note.")
     return redirect('customers:profile', customer_id=customer.id)
+
+
+# ==============================================================================
+# TENTATIVE: Create Job Card Action
+# (Easy to disable: simply comment out this entire function when merging Member 2's 'jobs' app)
+# ==============================================================================
+def create_job_card(request, customer_id):
+    """
+    Tentative action to handle 'Create Job Card' from Customer Profile.
+    Stores the created job card in the user's session and displays it under Active Jobs.
+    To replace with Member 2's official JobCard model: comment this out.
+    """
+    customer = get_object_or_404(Customer, pk=customer_id)
+    if request.method == 'POST':
+        import random
+        from datetime import datetime
+
+        vehicle_id = request.POST.get('vehicle_id')
+        service = request.POST.get('service', 'General Service').strip()
+        complaint = request.POST.get('complaint', '').strip()
+        expected = request.POST.get('expected', 'Pending').strip()
+        priority = request.POST.get('priority', 'Normal')
+
+        # Select vehicle
+        vehicle = customer.vehicles.filter(pk=vehicle_id).first() if vehicle_id else customer.vehicles.first()
+        vehicle_name = f"{vehicle.make} {vehicle.model}" if vehicle else "Customer Vehicle"
+        license_plate = vehicle.license_plate if vehicle else "WB-1023"
+
+        # Generate tentative Job ID (e.g. #J0429)
+        job_id = f"#J04{random.randint(25, 99)}"
+        date_in = datetime.now().strftime('%d %b %Y')
+
+        new_job = {
+            'job_id': job_id,
+            'vehicle_name': vehicle_name,
+            'license_plate': license_plate,
+            'service': service,
+            'complaint': complaint,
+            'date_in': date_in,
+            'expected': expected if expected else 'Pending',
+            'status': 'In Progress',
+            'status_class': 'badge-progress',
+            'priority': priority,
+        }
+
+        # Store in session
+        session_key = f'tentative_jobs_{customer.id}'
+        jobs = request.session.get(session_key, [])
+        jobs.insert(0, new_job)
+        request.session[session_key] = jobs
+        request.session.modified = True
+
+        messages.success(request, f"Job Card {job_id} created successfully for {vehicle_name} ({license_plate})!")
+    return redirect('customers:profile', customer_id=customer.id)
+# ==============================================================================
+# END TENTATIVE: Create Job Card Action
+# ==============================================================================
